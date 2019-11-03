@@ -1,6 +1,7 @@
 /* ***********************************
- * Smart contract for funding startups
- * author :
+ * project = Smart contract for funding startups
+ * author  = "Mohammed El Amine Idmoussi"
+ * challenge = DeFi Hackathon
  * ***********************************
  */
 
@@ -39,6 +40,20 @@ class rules {
 	customers_number:integer;
 }
 
+class status{
+	 key pubkey;
+	 move_forward:boolean;
+	 humain_review:boolean;
+     break_contract:boolean;
+}
+
+
+/* ****************************************************
+ * link all table to the smart contract using key smart_contract
+ * ****************************************************
+ */
+
+
 class contract_investor(log){
 	key smart_contract,investor;
 }
@@ -51,20 +66,16 @@ class contract_rules {
 	key smart_contract,rules;
 }
 
-class status{
-	 key smart_contract;
-	 move_forward:boolean;
-	 humain_review:boolean;
-     break_contract:boolean;
+class contract_status {
+	key smart_contract,rules;
 }
 
 
 /* ****************************************************
- * opeartion to to handling requests using CRUD
+ * operation to to handling requests using CRUD
  * ****************************************************
  */
  
-
 operation register_user (pubkey: byte_array,name: text) {
     require(is_signer(pubkey));
 
@@ -91,7 +102,6 @@ operation create_contract (user_pubkey: pubkey,investor_pubkey:pubkey, suid: byt
   	val sc = create smart_contract (suid, description, op_context.last_block_time);
    	create contract_investor(investor@{.pubkey == investor_pubkey}, sc);	
  	create contract_user(user@{.pubkey == user_pubkey},sc);
-// 	create contract_rules(rules@{.pubkey == suid},sc);
 }
 
 operation insert_rules(suid: byte_array,marketing_budget:integer,funding_monthly:integer,customers_number:integer){
@@ -99,14 +109,45 @@ operation insert_rules(suid: byte_array,marketing_budget:integer,funding_monthly
 	create rules(suid,marketing_budget,funding_monthly,customers_number);
 }
 
-//operation update_status(){
-//	if insert_balance@?{}.marketing_budget < rules@?{}.smarketing_budget {
-//		move_forward = true;
-//	 humain_review = false;
-//     break_contract = false;
-//     
+operation init_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
+	require(is_signer(pubkey));
+	create status(pubkey,move_forward,humain_review,break_contract);
+}
+
+//operation init_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
+////	require(is_signer(pubkey));
+////	create status(pubkey,move_forward = false,humain_review = false,break_contract = false);
+//}
+
+//function update_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
+//	// rules values for the budget and requirement to meet by the entrepreneur
+//	val r_mark = rules@?{}.marketing_budget;
+//	val r_fund = rules@?{}.funding_monthly;
+//	val r_cust = rules@?{}.customers_number;
+//	
+//	// real time budget state of the startup
+//	val marketing_budget = startup_balance@?{}.smarketing_budget;
+//	val funding_monthly = startup_balance@?{}.sfunding_monthly;
+//	val customers_number = startup_balance@?{}.scustomers_number;
+//	val suid = smart_contract@?{}.suid;
+//	
+//	if(marketing_budget == null and funding_monthly == null and customers_number == null ){
+//		require(is_signer(pubkey));
+//		create status(pubkey = suid,move_forward = true,humain_review = false,break_contract = false);
+//	}
+//	else if(marketing_budget != r_mark and   funding_monthly != r_fund and  customers_number != r_cust){
+//		update status(pubkey = suid,move_forward = true,humain_review = false,break_contract = false);
+//	}
+//	else if (marketing_budget != r_mark and   funding_monthly != r_fund and  customers_number != r_cust){
+//		update status(pubkey = suid,move_forward = false,humain_review = true,break_contract = false);
+//	}
+//	else{
+//		update status(pubkey = suid,move_forward = false,humain_review = true,break_contract = true);
 //	}
 //}
+
+
+
 
 
 /* ****************************************************
@@ -155,6 +196,16 @@ query get_rules(smart_contract_pubkey: text) {
 	);
 }
 
+query get_status(smart_contract_pubkey: text) {
+	return status@{
+		.pubkey == byte_array(smart_contract_pubkey)
+	}(
+		pubkey = .pubkey,
+		move_forward = .move_forward,
+	 	humain_review = .humain_review,
+     	break_contract = .break_contract
+	);
+}
 
 
 

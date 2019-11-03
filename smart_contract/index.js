@@ -32,12 +32,24 @@ const gtx = pcl.gtxClient.createClient(
 
     const keys_smart_contract = Buffer.from("smart contract"+Date.now());
     
+    // function operation_call(tx,key,operation,args,){
+    //     //  making one transaction
+    //     const tx = gtx.newTransaction([key]);
+    //     // first parameter of addOperation is the name of the function, then all the input parameters
+    //     tx.addOperation(operation, key.pubKey, args[0]);
+    //     tx.sign(key.privKey, key.pubKey)
+    //     await tx.postAndWaitConfirmation();
+    // }
+
     // making one transaction
 	const tx = gtx.newTransaction([keys_user.pubKey]);
     // first parameter of addOperation is the name of the function, then all the input parameters
     tx.addOperation("register_user", keys_user.pubKey, "Mohammed");
     tx.sign(keys_user.privKey, keys_user.pubKey)
     await tx.postAndWaitConfirmation();
+
+    // const user_args = ['Mohammed', undefined, undefined,undefined,undefined];
+    // operation_call("tx",keys_user,"register_user",user_args)
     console.log("Entrepreneur",await gtx.query("get_user",{user_pubkey: keys_user.pubKey.toString('hex')}))
 
     const tx2 = gtx.newTransaction([keys_investor.pubKey]);
