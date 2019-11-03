@@ -15,8 +15,8 @@ class startup_balance {
  	name:text;
  	//to query from the Open Banking API
   	samount: integer;
-  	smarketing_budget:integer;//5k
-	sfunding_monthly:integer;//15k
+  	smarketing_budget:integer;
+	sfunding_monthly:integer;
 	scustomers_number:integer;
 }
 
