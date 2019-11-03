@@ -1,0 +1,10 @@
+/* Demo code */ 
+//class city { key name; key pubkey: byte_array;}
+//
+//operation insert_city (name,pubkey) {
+//    create city (name,pubkey);
+//}
+//
+//query get_cities() {
+//    return city@*{}.name;
+//}

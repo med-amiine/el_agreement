@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+		<item value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet\smart funding\smart_contract_main"/>
+		<item value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet\smart funding\smart_contract"/>
+	</list>
+	<section name="ExternalProjectImportWizard">
+		<item key="WizardProjectsImportPage.STORE_NESTED_PROJECTS" value="false"/>
+		<item key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID" value="false"/>
+		<item key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED" value="false"/>
+		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet\smart funding\smart_contract_main"/>
+			<item value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet\smart funding\smart_contract"/>
+		</list>
+		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value=""/>
+			<item value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet\smart funding\smart_contract_main\smart_contract"/>
+		</list>
+	</section>
+	<section name="NewWizardAction">
+		<item key="NewWizardSelectionPage.STORE_SELECTED_ID" value="net.postchain.ui.wizard.RellNewProjectWizard"/>
+		<list key="NewWizardSelectionPage.STORE_EXPANDED_CATEGORIES_ID">
+			<item value="net.postchain.ui.category"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.internal.ide.dialogs.ProjectContentsLocationArea">
+		<item key="OUTSIDE_LOCATION" value="C:\Users\mohammed.idmoussi\Desktop\chromia_wallet"/>
+	</section>
+</section>

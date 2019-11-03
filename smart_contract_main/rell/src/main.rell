@@ -1,0 +1,167 @@
+/* ***********************************
+ * Smart contract for funding startups
+ * author :
+ * ***********************************
+ */
+
+
+class user { 
+    key pubkey: byte_array;
+    name: text; 
+}
+
+class startup_balance {
+ 	key pubkey;
+ 	name:text;
+ 	//to query from the Open Banking API
+  	samount: integer;
+  	smarketing_budget:integer;//5k
+	sfunding_monthly:integer;//15k
+	scustomers_number:integer;
+}
+
+class investor {
+	key pubkey;
+	name:text;
+	capital: integer;
+	fund:integer;
+}
+class smart_contract (log) {
+	key suid :byte_array;
+	description: text;
+	start_date:timestamp;
+}
+
+class rules {
+	key pubkey;
+	marketing_budget:integer;
+	funding_monthly:integer;
+	customers_number:integer;
+}
+
+class contract_investor(log){
+	key smart_contract,investor;
+}
+
+class contract_user {
+	key smart_contract,user;
+}
+
+class contract_rules {
+	key smart_contract,rules;
+}
+
+class status{
+	 key smart_contract;
+	 move_forward:boolean;
+	 humain_review:boolean;
+     break_contract:boolean;
+}
+
+
+/* ****************************************************
+ * opeartion to to handling requests using CRUD
+ * ****************************************************
+ */
+ 
+
+operation register_user (pubkey: byte_array,name: text) {
+    require(is_signer(pubkey));
+
+	//    require(not name.contains("Ricc"));
+    //if(name.contains("Ricc")){
+    //    require(false);
+    //}
+    create user(pubkey, name);
+}
+operation register_investor (pubkey: byte_array,name: text,capital: integer,fund: integer) {
+	require(is_signer(pubkey));
+	create investor(pubkey,name,capital,fund);
+}
+
+operation insert_balance(pubkey: byte_array,name: text,samount: integer,smarketing_budget: integer,sfunding_monthly: integer,scustomers_number: integer){
+	require(is_signer(pubkey));
+	create startup_balance(pubkey,name,samount,smarketing_budget,sfunding_monthly,scustomers_number);
+}
+   
+operation create_contract (user_pubkey: pubkey,investor_pubkey:pubkey, suid: byte_array, description: text) {
+	val user = require_not_empty(user@?{.pubkey == user_pubkey}, "user not existing");
+	val investor = require_not_empty(investor@?{.pubkey == investor_pubkey}, "investor not existing");
+	require( is_signer(user.pubkey), "User is not signer" );
+  	val sc = create smart_contract (suid, description, op_context.last_block_time);
+   	create contract_investor(investor@{.pubkey == investor_pubkey}, sc);	
+ 	create contract_user(user@{.pubkey == user_pubkey},sc);
+// 	create contract_rules(rules@{.pubkey == suid},sc);
+}
+
+operation insert_rules(suid: byte_array,marketing_budget:integer,funding_monthly:integer,customers_number:integer){
+//	require(is_signer(suid));
+	create rules(suid,marketing_budget,funding_monthly,customers_number);
+}
+
+//operation update_status(){
+//	if insert_balance@?{}.marketing_budget < rules@?{}.smarketing_budget {
+//		move_forward = true;
+//	 humain_review = false;
+//     break_contract = false;
+//     
+//	}
+//}
+
+
+/* ****************************************************
+ * Queries to access data stored on the smart contract
+ * ****************************************************
+ */
+ 
+query get_user(user_pubkey: text) {
+	return user@{
+		.pubkey == byte_array(user_pubkey)
+	}(
+		pubkey = .pubkey,
+		name = .name
+	);
+}
+
+query get_balance(startup_pubkey: text) {
+	return startup_balance@{
+		.pubkey == byte_array(startup_pubkey)
+	}(
+		pubkey = .pubkey,
+		samount = .samount,
+  		smarketing_budget = .smarketing_budget,
+		sfunding_monthly = .sfunding_monthly,
+		scustomers_number = .scustomers_number
+	);
+}
+query get_smart_contract(smart_contract_pubkey: text){
+	return smart_contract@{
+		.suid == byte_array(smart_contract_pubkey)
+	}(
+		pubkey = .suid,
+		description = .description,
+		start_date = .start_date
+	);
+}
+
+query get_rules(smart_contract_pubkey: text) {
+	return rules@{
+		.pubkey == byte_array(smart_contract_pubkey)
+	}(
+		pubkey = .pubkey,
+		marketing_budget = .marketing_budget,
+		funding_monthly = .funding_monthly,
+		customers_number = .customers_number
+	);
+}
+
+
+
+
+
+
+
+
+
+
+

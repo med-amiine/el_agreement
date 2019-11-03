@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="net.postchain.rell.rellConsoleApp">
+<stringAttribute key="net.postchain.rell.launch.conapp.ARGUMENTS" value=""/>
+<stringAttribute key="net.postchain.rell.launch.conapp.DB_PROPERTIES_FILE" value="hack_project/rell/config/node-config.properties"/>
+<stringAttribute key="net.postchain.rell.launch.conapp.FILE" value="hack_project/rell/src/main.rell"/>
+<stringAttribute key="net.postchain.rell.launch.conapp.FUNCTION" value="main"/>
+</launchConfiguration>

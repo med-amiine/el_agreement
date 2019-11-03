@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="net.postchain.rell.rellPostchainApp">
+<stringAttribute key="net.postchain.rell.launch.posapp.BLOCKCHAIN_RID" value="0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"/>
+<stringAttribute key="net.postchain.rell.launch.posapp.NODE_CONFIG_FILE" value="hack_project/rell/config/node-config.properties"/>
+<stringAttribute key="net.postchain.rell.launch.posapp.RELL_FILE" value="hack_project/rell/src/main.rell"/>
+</launchConfiguration>
