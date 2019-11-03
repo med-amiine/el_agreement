@@ -4,21 +4,28 @@
  * challenge = DeFi Hackathon
  * ***********************************
  */
+ 
 
-
+/* *****************************************
+ * all table used to store the contract data
+ * *****************************************
+ */
 class user { 
     key pubkey: byte_array;
     name: text; 
 }
 
 class startup_balance {
- 	key pubkey;
+ 	key smart_contract;
  	name:text;
  	//to query from the Open Banking API
-  	samount: integer;
-  	smarketing_budget:integer;
-	sfunding_monthly:integer;
-	scustomers_number:integer;
+  	mutable marketing_budget:integer;
+	mutable development_budget: integer;
+	mutable hr_budget: integer;
+	mutable management_budget: integer;
+	mutable other_budget: integer;
+	funding_monthly:integer;
+	customers_number:integer;
 }
 
 class investor {
@@ -27,8 +34,13 @@ class investor {
 	capital: integer;
 	fund:integer;
 }
+
+class bank {
+	pubkey;
+	name;
+}
 class smart_contract (log) {
-	key suid :byte_array;
+	key scid :byte_array;
 	description: text;
 	start_date:timestamp;
 }
@@ -36,23 +48,42 @@ class smart_contract (log) {
 class rules {
 	key pubkey;
 	marketing_budget:integer;
+	development_budget: integer;
+	hr_budget: integer;
+	management_budget: integer;
+	other_budget: integer;
+	
 	funding_monthly:integer;
 	customers_number:integer;
 }
 
 class status{
-	 key pubkey;
-	 move_forward:boolean;
-	 humain_review:boolean;
-     break_contract:boolean;
+	key smart_contract;
+	mutable step:integer;
+	mutable human_review:boolean;
+    mutable break_contract:boolean;
 }
 
+class investor_warning (log){
+	key user;
+	investor;
+	smart_contract;
+	timestamp;
+	msg: text;
+}
 
-/* ****************************************************
+class bank_warning (log){
+	key user;
+	bank;
+	smart_contract;
+	timestamp;
+	msg: text;
+}
+
+/* *************************************************************
  * link all table to the smart contract using key smart_contract
- * ****************************************************
+ * *************************************************************
  */
-
 
 class contract_investor(log){
 	key smart_contract,investor;
@@ -67,13 +98,13 @@ class contract_rules {
 }
 
 class contract_status {
-	key smart_contract,rules;
+	key smart_contract,status;
 }
 
 
-/* ****************************************************
- * operation to to handling requests using CRUD
- * ****************************************************
+/* *********************************************************
+ * operations & functions to to handling requests using CRUD
+ * *********************************************************
  */
  
 operation register_user (pubkey: byte_array,name: text) {
@@ -85,74 +116,210 @@ operation register_user (pubkey: byte_array,name: text) {
     //}
     create user(pubkey, name);
 }
+
+operation register_bank(pubkey, name) {
+	require(is_signer(pubkey));
+	create bank(pubkey, name);
+}
+
 operation register_investor (pubkey: byte_array,name: text,capital: integer,fund: integer) {
 	require(is_signer(pubkey));
 	create investor(pubkey,name,capital,fund);
 }
 
-operation insert_balance(pubkey: byte_array,name: text,samount: integer,smarketing_budget: integer,sfunding_monthly: integer,scustomers_number: integer){
-	require(is_signer(pubkey));
-	create startup_balance(pubkey,name,samount,smarketing_budget,sfunding_monthly,scustomers_number);
+operation deposit(
+		investor_pubkey: byte_array,
+		scid: byte_array, 
+		name: text,  
+		_marketing_budget: integer, 
+		_development_budget: integer, 
+		_hr_budget: integer, 
+		_management_budget: integer,
+		_other_budget: integer, 
+		_funding_monthly: integer,
+		_customers_number: integer
+){
+	val investor = investor@{investor_pubkey};
+	require(is_signer(investor.pubkey));
+	val sc = smart_contract@{scid};
+	is_valid(sc);
+	require(status@{sc}.step == 1);
+	create startup_balance(
+		sc,
+		name,
+		marketing_budget = _marketing_budget,
+		development_budget = _development_budget,
+		hr_budget = _hr_budget,
+		management_budget = _management_budget,
+		other_budget = _other_budget,
+		funding_monthly = _funding_monthly,
+		customers_number = _customers_number
+	);
+	update_status(sc, 3, false);
+}
+
+operation transfer(bank_pubkey: pubkey, scid: byte_array, amount: integer, category: text) {
+	val sc = smart_contract@{scid};
+	is_valid(sc);
+	val bank = bank@{bank_pubkey};
+	require(is_signer(bank.pubkey));
+	val sb = startup_balance@{sc};
+	when(category) {
+		"marketing" -> {
+			require(sb.marketing_budget >= amount);
+			sb.marketing_budget -= amount;
+		};
+		"development" -> {
+			require(sb.development_budget >= amount);
+			sb.development_budget -= amount;
+		};
+		"hr" -> {
+			require(sb.hr_budget >= amount);
+			sb.hr_budget -= amount;
+		};
+		"management" -> {
+			require(sb.management_budget >= amount);
+			sb.management_budget -= amount;
+		};
+		else -> {
+			require(sb.other_budget >= amount);
+			sb.management_budget -= amount;
+		};
+	}
+}
+
+operation fund_more(
+	investor_pubkey: pubkey, 
+	scid: byte_array,
+	_marketing_budget: integer, 
+	_development_budget: integer, 
+	_hr_budget: integer, 
+	_management_budget: integer,
+	_other_budget: integer
+) {
+	val sc = smart_contract@{scid};
+	is_valid(sc);
+	val investor = investor@{investor_pubkey};
+	require(is_signer(investor.pubkey));
+	
+	update startup_balance@{
+		sc
+	}(
+		.marketing_budget += _marketing_budget, 
+		.development_budget += _development_budget, 
+		.hr_budget +=  _hr_budget, 
+		.management_budget += _management_budget
+	);
 }
    
-operation create_contract (user_pubkey: pubkey,investor_pubkey:pubkey, suid: byte_array, description: text) {
+operation create_contract (user_pubkey: pubkey,investor_pubkey:pubkey, scid: byte_array, description: text) {
 	val user = require_not_empty(user@?{.pubkey == user_pubkey}, "user not existing");
 	val investor = require_not_empty(investor@?{.pubkey == investor_pubkey}, "investor not existing");
 	require( is_signer(user.pubkey), "User is not signer" );
-  	val sc = create smart_contract (suid, description, op_context.last_block_time);
+  	val sc = create smart_contract (scid, description, op_context.last_block_time);
    	create contract_investor(investor@{.pubkey == investor_pubkey}, sc);	
  	create contract_user(user@{.pubkey == user_pubkey},sc);
+ 	
+ 	init_status(sc,0,true);
 }
 
-operation insert_rules(suid: byte_array,marketing_budget:integer,funding_monthly:integer,customers_number:integer){
-//	require(is_signer(suid));
-	create rules(suid,marketing_budget,funding_monthly,customers_number);
+operation insert_rules(
+	investor_pubkey: pubkey,
+	scid: byte_array,
+	_marketing_budget:integer,
+	_development_budget: integer,
+	_hr_budget: integer,
+	_management_budget: integer,
+	_other_budget: integer,
+	_funding_monthly:integer,
+	customers_number:integer
+){
+	require(is_signer(investor_pubkey));
+	val sc = smart_contract@{.scid == scid};
+	require(status@{sc}.human_review == true);
+	require_step(sc, 0);
+	
+	create rules(
+		scid,
+		marketing_budget = _marketing_budget,
+		development_budget = _development_budget,
+		hr_budget = _hr_budget,
+		management_budget = _management_budget,
+		other_budget = _other_budget,
+		funding_monthly = _funding_monthly,
+		customers_number
+	);
+	
+	update_status(sc, 1, true);
 }
 
-operation init_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
-	require(is_signer(pubkey));
-	create status(pubkey,move_forward,humain_review,break_contract);
+
+function init_status(sc: smart_contract, step: integer,human_review: boolean){
+//	require(is_signer(pubkey));
+	create status(sc, step, .human_review = human_review, .break_contract = false);
 }
 
-//operation init_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
-////	require(is_signer(pubkey));
-////	create status(pubkey,move_forward = false,humain_review = false,break_contract = false);
-//}
+function require_step(sc: smart_contract, step: integer) {
+	require(status@{sc}.step == step);	
+}
 
-//function update_status(pubkey: byte_array,move_forward: boolean,humain_review: boolean ,break_contract: boolean){
-//	// rules values for the budget and requirement to meet by the entrepreneur
-//	val r_mark = rules@?{}.marketing_budget;
-//	val r_fund = rules@?{}.funding_monthly;
-//	val r_cust = rules@?{}.customers_number;
-//	
-//	// real time budget state of the startup
-//	val marketing_budget = startup_balance@?{}.smarketing_budget;
-//	val funding_monthly = startup_balance@?{}.sfunding_monthly;
-//	val customers_number = startup_balance@?{}.scustomers_number;
-//	val suid = smart_contract@?{}.suid;
-//	
-//	if(marketing_budget == null and funding_monthly == null and customers_number == null ){
-//		require(is_signer(pubkey));
-//		create status(pubkey = suid,move_forward = true,humain_review = false,break_contract = false);
-//	}
-//	else if(marketing_budget != r_mark and   funding_monthly != r_fund and  customers_number != r_cust){
-//		update status(pubkey = suid,move_forward = true,humain_review = false,break_contract = false);
-//	}
-//	else if (marketing_budget != r_mark and   funding_monthly != r_fund and  customers_number != r_cust){
-//		update status(pubkey = suid,move_forward = false,humain_review = true,break_contract = false);
-//	}
-//	else{
-//		update status(pubkey = suid,move_forward = false,humain_review = true,break_contract = true);
-//	}
-//}
+operation break_contract(scid: byte_array, pubkey, is_investor:boolean) { // is_investor -> false == bank
+	if(is_investor) {
+		val investor = investor@{pubkey};
+		require(is_signer(investor.pubkey));	
+	} else {
+		val bank = bank@{pubkey};
+		require(is_signer(bank.pubkey));
+	}
+	//status@{smart_contract@{.scid == scid}};
+	val this_status = status@{.smart_contract.scid == scid};
+	this_status.break_contract = true;
+}
+
+operation bank_warn(bank_pubkey: pubkey, user_pubkey: pubkey, scid: byte_array, msg: text) {
+	val sc = smart_contract@{scid};
+	is_valid(sc);
+	val bank = bank@{bank_pubkey};
+	require(is_signer(bank.pubkey));
+	create bank_warning(
+		user@{user_pubkey},
+		bank,
+		sc,
+		op_context.last_block_time,
+		msg
+	);
+} 
+
+operation investor_warn(investor_pubkey: pubkey, user_pubkey: pubkey, scid: byte_array, msg: text) {
+	val sc = smart_contract@{scid};
+	is_valid(sc);
+	val investor = investor@{investor_pubkey};
+	require(is_signer(investor.pubkey));
+	create investor_warning(
+		user@{user_pubkey},
+		investor,
+		sc,
+		op_context.last_block_time,
+		msg
+	);
+} 
+
+function update_status(sc: smart_contract, step: integer, human_review: boolean) {
+	update status@{sc}(
+		.step = step,
+		.human_review = human_review
+	);
+}
+
+function is_valid(sc: smart_contract) {
+	require(not status@{sc}.break_contract);
+}
 
 
 
-
-
-/* ****************************************************
+/* ***************************************************
  * Queries to access data stored on the smart contract
- * ****************************************************
+ * ***************************************************
  */
  
 query get_user(user_pubkey: text) {
@@ -166,20 +333,19 @@ query get_user(user_pubkey: text) {
 
 query get_balance(startup_pubkey: text) {
 	return startup_balance@{
-		.pubkey == byte_array(startup_pubkey)
+		smart_contract@{byte_array(startup_pubkey)}
 	}(
-		pubkey = .pubkey,
-		samount = .samount,
-  		smarketing_budget = .smarketing_budget,
-		sfunding_monthly = .sfunding_monthly,
-		scustomers_number = .scustomers_number
+		pubkey = .smart_contract.scid,
+  		marketing_budget = .marketing_budget,
+		funding_monthly = .funding_monthly,
+		customers_number = .customers_number
 	);
 }
 query get_smart_contract(smart_contract_pubkey: text){
 	return smart_contract@{
-		.suid == byte_array(smart_contract_pubkey)
+		.scid == byte_array(smart_contract_pubkey)
 	}(
-		pubkey = .suid,
+		scid = .scid,
 		description = .description,
 		start_date = .start_date
 	);
@@ -198,20 +364,18 @@ query get_rules(smart_contract_pubkey: text) {
 
 query get_status(smart_contract_pubkey: text) {
 	return status@{
-		.pubkey == byte_array(smart_contract_pubkey)
+		smart_contract@{byte_array(smart_contract_pubkey)}
 	}(
-		pubkey = .pubkey,
-		move_forward = .move_forward,
-	 	humain_review = .humain_review,
+		scid = .smart_contract.scid,
+		step = .step,
+	 	human_review = .human_review,
      	break_contract = .break_contract
 	);
 }
 
-
-
-
-
-
+query get_marketing_amount(scid: text) {
+	return startup_balance@{.smart_contract.scid == byte_array(scid)}.marketing_budget;
+}
 
 
 
